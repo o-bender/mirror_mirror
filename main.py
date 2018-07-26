@@ -73,38 +73,57 @@ def train(face_encoder, person_name, images):
     session.commit()
 
 
-def run(face_encoder, models):
-    cap = cv2.VideoCapture(0)
+def run(cap, face_encoder, models, gamma, predictor):
+    # try:
+        # while(True):
+        ret, unknown_image = cap.read()
+        unknown_image = adjust_gamma(unknown_image, gamma)
 
-    try:
-        while(True):
-            ret, unknown_image = cap.read()
-            unknown_image = adjust_gamma(unknown_image, args.adjust_gamma)
+        # Искать прямоугольники (телефоны, рамки и т.п)
+        # Если лицо внутри рамки, то это подставочка
+        # print(find_phone(unknown_image))
 
-            # Искать прямоугольники (телефоны, рамки и т.п)
-            # Если лицо внутри рамки, то это подставочка
-            # print(find_phone(unknown_image))
+        # known_image = face_recognition.load_image_file("aaiCMWZqifg.jpg")
+        # known_image = imutils.resize(known_image, width=500)
+        # biden_encoding = face_encodings(known_image)[0]
 
-            # known_image = face_recognition.load_image_file("aaiCMWZqifg.jpg")
-            # known_image = imutils.resize(known_image, width=500)
-            # biden_encoding = face_encodings(known_image)[0]
+        # unknown_image = face_recognition.load_image_file("71lOOv_lN5A.jpg")
+        # unknown_image = imutils.resize(unknown_image, width=500)
+        unknown_encodings = face_encodings(face_encoder, unknown_image, model=predictor)
 
-            # unknown_image = face_recognition.load_image_file("71lOOv_lN5A.jpg")
-            # unknown_image = imutils.resize(unknown_image, width=500)
-            unknown_encodings = face_encodings(face_encoder, unknown_image, model=args.predictor)
-
-            for unknown_encoding in unknown_encodings:
-                for model_name, model in models.items():
-                    results = face_recognition.compare_faces(model, unknown_encoding)
-                    # file_name = str(uuid.uuid1()) + str(results) + '.jpg'
-                    # cv2.imwrite(file_name, unknown_image)
+        for unknown_encoding in unknown_encodings:
+            for model_name, model in models.items():
+                results = face_recognition.compare_faces(model, unknown_encoding)
+                # file_name = str(uuid.uuid1()) + str(results) + '.jpg'
+                # cv2.imwrite(file_name, unknown_image)
+                print(model_name)
+                print(results)
+                print(np.mean(results))
+                if np.mean(results) > 0.7:
                     print(model_name)
-                    print(results)
-                    print(np.mean(results))
-    except Exception as e:
-        print(e)
+                    yield model_name
+    # except Exception as e:
+    #     print(e)
 
-    cap.release()
+    # cap.release()
+
+
+def get_face_encoder():
+    face_recognition_model = face_recognition_models.face_recognition_model_location()
+    face_encoder = dlib.face_recognition_model_v1(face_recognition_model)
+    return face_encoder
+
+
+def get_models():
+    models = {}
+    for person in session.query(Person).all():
+        if person.person not in models:
+            models[person.person] = []
+        models[person.person].append(np.array(json.loads(person.marks)))
+    return models
+
+def get_cap():
+    return cv2.VideoCapture(0)
 
 
 if __name__ == '__main__':
@@ -120,8 +139,8 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    face_recognition_model = face_recognition_models.face_recognition_model_location()
-    face_encoder = dlib.face_recognition_model_v1(face_recognition_model)
+    face_encoder = get_face_encoder()
+    cap = get_cap()
 
     if args.train:
         train(face_encoder, args.train, args.images)
@@ -130,11 +149,8 @@ if __name__ == '__main__':
     else:
         if args.model:
             marks = [np.array(json.loads(mark.marks)) for mark in session.query(Person.marks).filter(Person.person == args.model).all()]
-            run(face_encoder, {args.model: marks})
+            run(cap, face_encoder, {args.model: marks}, args.adjust_gamma, args.predictor)
         else:
-            models = {}
-            for person in session.query(Person).all():
-                if person.person not in models:
-                    models[person.person] = []
-                models[person.person].append(np.array(json.loads(person.marks)))
-            run(face_encoder, models)
+            models = get_models()
+            while True:
+                list(run(cap, face_encoder, models, args.adjust_gamma, args.predictor))
