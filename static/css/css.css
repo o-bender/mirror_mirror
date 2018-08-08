@@ -1,0 +1,109 @@
+body {
+    background-color: black;
+    color: white;
+    overflow: hidden;
+    font-family: 'Oswald', sans-serif;
+}
+.text-center {
+    text-align: center;
+}
+.text.hidden {
+    transition: transform .5s ease;
+}
+
+
+
+.translate-y {
+    transform: translateY(-4em);
+}
+.flex-row {
+    display: flex;
+    flex-direction: row;
+}
+.justify-space-between {
+    justify-content: space-between;
+}
+.ml-2 {
+    margin-left: 2em;
+}
+
+
+img.big {
+    width: 24em;
+}
+            
+.weather-widget {
+    right: -100%;
+    position: absolute;
+    top: 0;
+    width: 30%;
+    transition: all 1s ease;
+}
+
+.weather-widget > * {
+    margin-bottom: 1em;
+}
+
+.ww_wind span:after {
+    content: ' м/с';
+}
+
+.ww_temp span:after {
+    content: ' C°';
+}
+
+.ww_temp img, .ww_wind img {
+    width: 2em;
+    display: inline;
+}
+
+.ww_temp.hot img[src="/static/thermometer-cold.svg"]{
+    display: none;
+}
+.ww_temp.cold img[src="/static/thermometer.svg"]{
+    display: none;
+}
+
+.weather-widget .ww_today span {
+    font-size: 1.5em;
+    vertical-align: super;
+}
+
+/* next-hours */
+
+.weather-widget .ww_title {
+    margin-bottom: 5px;
+    border-bottom: 1px dashed white;
+    padding-bottom: 5px;
+    font-size: 1.2em;
+}
+
+.weather-widget .ww_next-hours .ww_temp span,
+.weather-widget .ww_next-hours .ww_wind span {
+    display: block;
+}
+
+/* next-days */
+
+.weather-widget .ww_next-days {
+    vertical-align: super;
+}
+
+.weather-widget .ww_next-days .ww_block > img {
+    height: 3em;
+    transform: translateY(-9px);
+}
+
+.weather-widget .ww_next-days .ww_block img {
+    height: 1.5em;
+}
+.weather-widget .ww_next-hours .ww_block .ww_temp span,
+.weather-widget .ww_next-hours .ww_block .ww_wind span {
+    line-height: 2em;
+}
+.weather-widget .ww_next-days .ww_block .ww_temp span,
+.weather-widget .ww_next-days .ww_block .ww_wind span {
+    display: inline;
+    line-height: 2em;
+    vertical-align: super;
+}

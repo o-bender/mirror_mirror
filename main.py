@@ -1,5 +1,6 @@
 import face_recognition
-from face_recognition.api import _raw_face_landmarks
+# from face_recognition.api import _raw_face_landmarks
+from face_recognition.api import _raw_face_locations
 import face_recognition_models
 import numpy as np
 import dlib
@@ -12,8 +13,29 @@ from db_models import Person, session
 import os
 import json
 
+face_detector = dlib.get_frontal_face_detector()
 
-def face_encodings(face_encoder, face_image, known_face_locations=None, num_jitters=1, model='large'):
+predictor_68_point_model = face_recognition_models.pose_predictor_model_location()
+pose_predictor_68_point = dlib.shape_predictor(predictor_68_point_model)
+
+predictor_5_point_model = face_recognition_models.pose_predictor_five_point_model_location()
+pose_predictor_5_point = dlib.shape_predictor(predictor_5_point_model)
+
+# cnn_face_detection_model = face_recognition_models.cnn_face_detector_model_location()
+# cnn_face_detector = dlib.cnn_face_detection_model_v1(cnn_face_detection_model)
+
+face_recognition_model = face_recognition_models.face_recognition_model_location()
+face_encoder = dlib.face_recognition_model_v1(face_recognition_model)
+
+
+def _raw_face_landmarks(face_image, face_locations=None, model="large"):
+    face_locations = face_locations or _raw_face_locations(face_image)
+    pose_predictor = {'small': pose_predictor_5_point, 'large': pose_predictor_68_point}[model]
+
+    return [pose_predictor(face_image, face_location) for face_location in face_locations]
+
+
+def face_encodings(face_image, face_locations=None, num_jitters=1, model='large'):
     """
     Given an image, return the 128-dimension face encoding for each face in the image.
     :param face_image: The image that contains one or more faces
@@ -21,7 +43,7 @@ def face_encodings(face_encoder, face_image, known_face_locations=None, num_jitt
     :param num_jitters: How many times to re-sample the face when calculating encoding. Higher is more accurate, but slower (i.e. 100 is 100x slower)
     :return: A list of 128-dimensional face encodings (one for each face in the image)
     """
-    raw_landmarks = _raw_face_landmarks(face_image, known_face_locations, model=model)
+    raw_landmarks = _raw_face_landmarks(face_image, face_locations, model=model)
     return [np.array(face_encoder.compute_face_descriptor(face_image, raw_landmark_set, num_jitters)) for raw_landmark_set in raw_landmarks]
 
 
@@ -58,7 +80,7 @@ def find_phone(image):
     return cnts
 
 
-def train(face_encoder, person_name, images):
+def train(person_name, images):
     if os.path.isdir(images):
         images = [os.path.join(images, file_name) for file_name in os.listdir(images)]
     elif os.path.isfile(images):
@@ -73,7 +95,7 @@ def train(face_encoder, person_name, images):
     session.commit()
 
 
-def run(cap, face_encoder, models, gamma, predictor):
+def run(cap, models, gamma, predictor):
     # try:
         # while(True):
         ret, unknown_image = cap.read()
@@ -89,8 +111,8 @@ def run(cap, face_encoder, models, gamma, predictor):
 
         # unknown_image = face_recognition.load_image_file("71lOOv_lN5A.jpg")
         # unknown_image = imutils.resize(unknown_image, width=500)
-        unknown_encodings = face_encodings(face_encoder, unknown_image, model=predictor)
-
+        _face_locations = _raw_face_locations(unknown_image)
+        unknown_encodings = face_encodings(unknown_image, face_locations=_face_locations, model=predictor)
         for unknown_encoding in unknown_encodings:
             for model_name, model in models.items():
                 results = face_recognition.compare_faces(model, unknown_encoding)
@@ -107,11 +129,6 @@ def run(cap, face_encoder, models, gamma, predictor):
 
     # cap.release()
 
-
-def get_face_encoder():
-    face_recognition_model = face_recognition_models.face_recognition_model_location()
-    face_encoder = dlib.face_recognition_model_v1(face_recognition_model)
-    return face_encoder
 
 
 def get_models():
@@ -139,18 +156,17 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    face_encoder = get_face_encoder()
     cap = get_cap()
 
     if args.train:
-        train(face_encoder, args.train, args.images)
+        train(args.train, args.images)
     elif args.calibrate_adjust_gamma:
         calibrate_adjust(args.adjust_gamma)
     else:
         if args.model:
             marks = [np.array(json.loads(mark.marks)) for mark in session.query(Person.marks).filter(Person.person == args.model).all()]
-            run(cap, face_encoder, {args.model: marks}, args.adjust_gamma, args.predictor)
+            run(cap, {args.model: marks}, args.adjust_gamma, args.predictor)
         else:
             models = get_models()
             while True:
-                list(run(cap, face_encoder, models, args.adjust_gamma, args.predictor))
+                list(run(cap, models, args.adjust_gamma, args.predictor))

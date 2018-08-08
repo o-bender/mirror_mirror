@@ -1,0 +1,63 @@
+<style type="text/css">
+    .weather-widget .ww_next-hours .ww_time {
+        margin-bottom: 5px;
+        border-bottom: 1px dashed white;
+        padding: 5px;
+    }
+
+    .weather-widget .ww_next-days {
+        vertical-align: super;
+    }
+
+    .weather-widget .ww_next-days .ww_day-title {
+        margin-left: 15px;
+        margin-bottom: 5px;
+        border-bottom: 1px dashed white;
+        padding-bottom: 5px;
+    }
+    .weather-widget .ww_next-days .ww_block > img {
+        height: 3em;
+        transform: translateY(-9px);
+    }
+
+    .weather-widget .ww_next-days .ww_block > div > img {
+        height: 1.5em;
+    }
+    .weather-widget .ww_next-days .ww_block .ww_temp span,
+    .weather-widget .ww_next-days .ww_block .ww_wind span{
+        display: inline;
+        line-height: 2em;
+        vertical-align: super;
+    }
+</style>
+
+<div class="weather-widget" style="right: 0px;">
+    <img class="big translate-y" src="/static/amcharts_weather_icons_1.0.0/animated/day.svg">
+    <div class="flex-row justify-space-between translate-y">
+        <div class="temp hot">
+            <img src="/static/thermometer.svg">
+            <img src="/static/thermometer-cold.svg">
+            <h2>28.02</h2>
+        </div>
+        <div class="wind">
+            <img src="/static/breeze-white.svg">
+            <h2>5</h2>
+        </div>
+    </div>
+
+    <div class="ww_next-hours flex-row justify-space-between text-center translate-y">                
+        <div class="ww_block">
+            <div class="ww_time"></div>
+            {{ ww_block() }}
+        </div>
+    </div>
+
+
+    <div class="ww_next-days translate-y">
+        <div class="ww_day-title"></div>
+        <div class="ww_block flex-row justify-space-between">
+            {{ ww_block() }}
+        </div>
+        
+    </div>
+</div>
